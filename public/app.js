@@ -512,7 +512,7 @@
 
   // Refresh "late"/greeting labels periodically and when returning to the app.
   setInterval(render, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { tasks = load(); render(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { tasks = load(); render(); syncReminders(); } });
 
   render();
   initPush();
