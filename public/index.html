@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Homeroom</title>
+  <meta name="description" content="Your daily tasks and homework, in one calm place." />
+  <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#141416" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Homeroom" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div>
+        <p class="eyebrow" id="today-label"></p>
+        <h1 id="greeting">Hello</h1>
+      </div>
+      <div class="top-right">
+        <div class="ring" id="ring" aria-label="Today's progress">
+          <svg viewBox="0 0 44 44" aria-hidden="true">
+            <circle cx="22" cy="22" r="18" class="ring-bg" />
+            <circle cx="22" cy="22" r="18" class="ring-fg" id="ring-fg" />
+          </svg>
+          <span id="ring-text">0/0</span>
+        </div>
+        <button class="icon-btn" id="open-settings" aria-label="Notifications &amp; settings">
+          <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="dot" id="bell-dot" hidden></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="banner" id="notif-banner" hidden>
+      <div>
+        <strong>Get reminders on your iPhone</strong>
+        <span id="banner-text">Turn on notifications so you never miss a due date.</span>
+      </div>
+      <button class="btn small" id="banner-btn">Set up</button>
+    </div>
+
+    <form class="quick" id="quick-form" autocomplete="off">
+      <input id="quick-input" placeholder="Add a task for today…" aria-label="Quick add a task" enterkeyhint="done" />
+      <button type="button" class="icon-btn subtle" id="quick-more" aria-label="Add with details">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+      </button>
+      <button type="submit" class="icon-btn accent" aria-label="Add">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </form>
+
+    <nav class="tabs" id="tabs" role="tablist">
+      <button role="tab" data-view="today" class="active">Today <span class="count"></span></button>
+      <button role="tab" data-view="upcoming">Upcoming <span class="count"></span></button>
+      <button role="tab" data-view="homework">Homework <span class="count"></span></button>
+      <button role="tab" data-view="all">All <span class="count"></span></button>
+      <button role="tab" data-view="done">Done <span class="count"></span></button>
+    </nav>
+
+    <section id="list" class="list" aria-live="polite"></section>
+  </main>
+
+  <button class="fab" id="fab" aria-label="New task">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <!-- Add / edit sheet -->
+  <dialog class="sheet" id="task-sheet">
+    <form method="dialog" id="task-form" autocomplete="off">
+      <div class="grabber"></div>
+      <div class="sheet-head">
+        <button type="button" class="link" data-close>Cancel</button>
+        <h2 id="sheet-title">New task</h2>
+        <button type="submit" class="link strong" value="save">Save</button>
+      </div>
+
+      <div class="seg" role="radiogroup" aria-label="Type">
+        <label><input type="radio" name="kind" value="task" checked /><span>✓ Task</span></label>
+        <label><input type="radio" name="kind" value="homework" /><span>📚 Homework</span></label>
+      </div>
+
+      <label class="field">
+        <span>What needs doing?</span>
+        <input name="title" required maxlength="120" placeholder="e.g. Read chapter 5" />
+      </label>
+
+      <label class="field" id="subject-field">
+        <span>Class / subject</span>
+        <input name="subject" list="subjects" maxlength="40" placeholder="e.g. Biology" />
+        <datalist id="subjects"></datalist>
+      </label>
+
+      <div class="row">
+        <label class="field">
+          <span>Due date</span>
+          <input type="date" name="date" />
+        </label>
+        <label class="field">
+          <span>Time <em>(optional)</em></span>
+          <input type="time" name="time" />
+        </label>
+      </div>
+      <div class="chips" id="date-chips">
+        <button type="button" data-days="0">Today</button>
+        <button type="button" data-days="1">Tomorrow</button>
+        <button type="button" data-days="weekend">This weekend</button>
+        <button type="button" data-days="7">Next week</button>
+        <button type="button" data-days="none">No date</button>
+      </div>
+
+      <label class="field">
+        <span>Remind me</span>
+        <select name="remind">
+          <option value="">Don't remind me</option>
+          <option value="0">At due time</option>
+          <option value="15">15 minutes before</option>
+          <option value="60">1 hour before</option>
+          <option value="180">3 hours before</option>
+          <option value="1440">1 day before</option>
+          <option value="morning">Morning of (8:00 AM)</option>
+          <option value="evening">Evening before (7:00 PM)</option>
+        </select>
+      </label>
+
+      <fieldset class="field">
+        <span>Priority</span>
+        <div class="seg three">
+          <label><input type="radio" name="priority" value="low" /><span>Low</span></label>
+          <label><input type="radio" name="priority" value="med" checked /><span>Normal</span></label>
+          <label><input type="radio" name="priority" value="high" /><span>🔥 High</span></label>
+        </div>
+      </fieldset>
+
+      <label class="field">
+        <span>Notes</span>
+        <textarea name="notes" rows="3" maxlength="1000" placeholder="Page numbers, links, details…"></textarea>
+      </label>
+
+      <button type="button" class="btn danger ghost" id="delete-btn" hidden>Delete task</button>
+    </form>
+  </dialog>
+
+  <!-- Settings / notifications sheet -->
+  <dialog class="sheet" id="settings-sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <span></span>
+      <h2>Notifications</h2>
+      <button type="button" class="link strong" data-close>Done</button>
+    </div>
+
+    <div class="status-card" id="notif-status"></div>
+
+    <div id="ios-steps" class="steps" hidden>
+      <h3>Set up on iPhone (one time)</h3>
+      <ol>
+        <li>Open this page in <b>Safari</b>.</li>
+        <li>Tap the <b>Share</b> button <span class="share-ico">⬆︎</span> at the bottom.</li>
+        <li>Choose <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+        <li>Open <b>Homeroom</b> from your Home Screen and come back here to turn on notifications.</li>
+      </ol>
+      <p class="muted">Apple only lets websites send notifications once they're added to the Home Screen (iOS 16.4 or newer).</p>
+    </div>
+
+    <div class="stack">
+      <button class="btn" id="enable-notifs">Turn on notifications</button>
+      <button class="btn ghost" id="test-notif" hidden>Send a test notification</button>
+    </div>
+
+    <hr />
+    <h3>Your data</h3>
+    <p class="muted">Tasks are saved on this device. Back them up or move them to another device:</p>
+    <div class="stack row2">
+      <button class="btn ghost" id="export-btn">Export</button>
+      <label class="btn ghost">Import<input type="file" id="import-file" accept="application/json" hidden /></label>
+    </div>
+    <button class="btn danger ghost" id="clear-done">Clear completed tasks</button>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <template id="item-tpl">
+    <article class="item">
+      <button class="check" aria-label="Mark complete">
+        <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </button>
+      <div class="body">
+        <div class="title"></div>
+        <div class="meta"></div>
+        <div class="notes"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="/app.js"></script>
+</body>
+</html>
