@@ -9,19 +9,36 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // ---- VAPID keys (identify this server to Apple's push service) ----
-let vapid;
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  vapid = { publicKey: process.env.VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY };
-} else {
+// Strip stray quotes, commas, spaces and "key:" labels that sneak in when pasting.
+const clean = (v) => (v || '').trim().replace(/^[^:]*key"?\s*:\s*/i, '').replace(/[\s"',;]/g, '').replace(/=+$/, '');
+function fileKeys() {
   const f = path.join(DATA_DIR, 'vapid.json');
-  if (fs.existsSync(f)) vapid = JSON.parse(fs.readFileSync(f, 'utf8'));
-  else {
-    vapid = webpush.generateVAPIDKeys();
-    fs.writeFileSync(f, JSON.stringify(vapid, null, 2));
-    console.log('Generated new VAPID keys in', f);
+  try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
+  const keys = webpush.generateVAPIDKeys();
+  fs.writeFileSync(f, JSON.stringify(keys, null, 2));
+  console.log('Generated new VAPID keys in', f);
+  return keys;
+}
+let subject = (process.env.VAPID_SUBJECT || '').trim().replace(/^["']|["']$/g, '');
+if (subject && !/^(mailto:|https:\/\/)/.test(subject)) subject = subject.includes('@') ? 'mailto:' + subject : '';
+subject = subject || 'mailto:homeroom@example.com';
+
+let vapid = null;
+if (process.env.VAPID_PUBLIC_KEY || process.env.VAPID_PRIVATE_KEY) {
+  const envKeys = { publicKey: clean(process.env.VAPID_PUBLIC_KEY), privateKey: clean(process.env.VAPID_PRIVATE_KEY) };
+  try {
+    webpush.setVapidDetails(subject, envKeys.publicKey, envKeys.privateKey);
+    vapid = envKeys;
+    console.log('Using VAPID keys from environment variables');
+  } catch (e) {
+    console.error('!! VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY look wrong (' + e.message + '). ' +
+      'Falling back to generated keys — notifications will stop working after a restart until this is fixed.');
   }
 }
-webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:homeroom@example.com', vapid.publicKey, vapid.privateKey);
+if (!vapid) {
+  vapid = fileKeys();
+  webpush.setVapidDetails(subject, vapid.publicKey, vapid.privateKey);
+}
 
 // ---- Storage: { [endpoint]: { subscription, reminders: [{id,title,body,at,sent}] } } ----
 const DB_FILE = path.join(DATA_DIR, 'db.json');
